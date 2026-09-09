@@ -100,7 +100,6 @@ def check_website(url: str, state: dict) -> list:
     text = soup.get_text(separator=" ", strip=True).lower()
 
     if KEYWORD in text:
-        # busca fragmentos de contexto alrededor de cada aparición
         for m in re.finditer(KEYWORD, text):
             start = max(0, m.start() - 80)
             end = min(len(text), m.end() + 80)
@@ -150,6 +149,17 @@ def check_news(state: dict) -> list:
 
 
 def main():
+    # --- Modo de prueba: manda un mensaje de prueba y termina, sin tocar ---
+    # --- el estado real de detección. Se activa solo si TEST_MODE=true.  ---
+    if os.environ.get("TEST_MODE", "false").lower() == "true":
+        send_telegram(
+            "✅ Prueba del flujo completo: si ves este mensaje, "
+            "GitHub Actions -> monitor.py -> Telegram está funcionando "
+            "perfecto de punta a punta."
+        )
+        print("Mensaje de prueba enviado correctamente.")
+        return
+
     state = load_state()
 
     if state.get("alerted"):
@@ -167,7 +177,6 @@ def main():
         print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Sin novedades.")
         return
 
-    # Manda una alerta (agrupando todos los hallazgos de esta corrida)
     lines = ["🚨 <b>¡Posible lanzamiento de Destino Oculto detectado!</b>", ""]
     for hit in all_hits:
         lines.append(f"• {hit['snippet']}")

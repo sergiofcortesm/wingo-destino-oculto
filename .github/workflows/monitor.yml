@@ -2,15 +2,17 @@ name: Monitor Destino Oculto Wingo
 
 on:
   schedule:
-    # GitHub Actions no permite cron de menos de 5 minutos.
-    # Usamos DOS horarios distintos (offset de 2 y 3 min) para que,
-    # en la práctica, el chequeo efectivo sea cada ~2-3 minutos.
     - cron: '*/5 * * * *'      # minuto 0, 5, 10, 15...
     - cron: '2-59/5 * * * *'   # minuto 2, 7, 12, 17...
-  workflow_dispatch: {}         # permite correrlo manualmente desde GitHub para probar
+  workflow_dispatch:
+    inputs:
+      test_mode:
+        description: 'Mandar mensaje de prueba a Telegram (no revisa wingo.com ni noticias)'
+        type: boolean
+        default: false
 
 permissions:
-  contents: write   # necesario para poder guardar state.json de vuelta al repo
+  contents: write
 
 concurrency:
   group: wingo-monitor
@@ -35,6 +37,7 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TEST_MODE: ${{ inputs.test_mode }}
         run: python monitor.py
 
       - name: Guardar estado (si cambió)
