@@ -1,0 +1,50 @@
+name: Monitor Destino Oculto Wingo
+
+on:
+  schedule:
+    # GitHub Actions no permite cron de menos de 5 minutos.
+    # Usamos DOS horarios distintos (offset de 2 y 3 min) para que,
+    # en la práctica, el chequeo efectivo sea cada ~2-3 minutos.
+    - cron: '*/5 * * * *'      # minuto 0, 5, 10, 15...
+    - cron: '2-59/5 * * * *'   # minuto 2, 7, 12, 17...
+  workflow_dispatch: {}         # permite correrlo manualmente desde GitHub para probar
+
+permissions:
+  contents: write   # necesario para poder guardar state.json de vuelta al repo
+
+concurrency:
+  group: wingo-monitor
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Ejecutar monitor
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python monitor.py
+
+      - name: Guardar estado (si cambió)
+        run: |
+          if ! git diff --quiet -- state.json; then
+            git config user.name "wingo-monitor-bot"
+            git config user.email "actions@github.com"
+            git add state.json
+            git commit -m "chore: actualizar estado del monitor [skip ci]"
+            git push
+          else
+            echo "Sin cambios en el estado."
+          fi
