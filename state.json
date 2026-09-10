@@ -1,4 +1,7 @@
 {
-  "alerted": false,
-  "seen_hashes": []
+  "alerted": true,
+  "seen_hashes": [
+    "3192050536ea8182",
+    "3192050536ea8182"
+  ]
 }
